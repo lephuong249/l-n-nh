@@ -1,5 +1,5 @@
 generator client {
-  provider           = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -7,296 +7,399 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// QUAN LY NGUOI DUNG & XAC THUC
+// ============================================
 
-// User and related domain models
-enum Role {
-  Admin
-  User
-}
-
+// Bang User: Luu thong tin nguoi dung
 model User {
-  id               String         @id @default(auto()) @map("_id") @db.ObjectId
-  firstName        String
-  lastName         String
-  birthday         DateTime?
-  gender           String?
-  email            String         @unique
-  password         String?
-  role             Role 
-  externalId       String?
-  provider         String?
-  phoneNumber      String?
-  isActive         Boolean        @default(false)
-  addresses        Address[]
-  wishlist         Wishlist?      @relation("UserToWishlist")
-  cart             Cart?          @relation("UserToCart")
-  orders           Order[]        @relation("UserToOrders")
-  reviews          Review[]       @relation("UserToReviews")
-  sentMessages     ChatMessage[]  @relation("SentMessages")
-  receivedMessages ChatMessage[]  @relation("ReceivedMessages")
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String // Mat khau da hash (bcrypt)
+  username  String
+  phone     String? // So dien thoai (khong bat buoc)
+  avatar    String? // URL anh dai dien
+  role      Role     @default(CUSTOMER) // Vai tro: CUSTOMER hoac ADMIN
+  isActive  Boolean  @default(true) // Tai khoan co hoat dong khong
+  createdAt DateTime @default(now()) // Thoi gian tao tai khoan
+  updatedAt DateTime @updatedAt // Thoi gian cap nhat cuoi
+
+  // Quan he voi cac bang khac
+  addresses Address[] // 1 user co nhieu dia chi
+  orders    Order[] // 1 user co nhieu don hang
+  reviews   Review[] // 1 user co nhieu danh gia
+  cart      Cart? // 1 user co 1 gio hang
+  wishlist  Wishlist? // 1 user co 1 danh sach yeu thich
+
+  @@map("users")
 }
 
+// Enum vai tro nguoi dung
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+// ============================================
+// QUAN LY DIA CHI GIAO HANG
+// ============================================
+
+// Bang Address: Luu dia chi giao hang cua user
 model Address {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId      String   @db.ObjectId
-  fullName    String
-  phoneNumber String
-  addressLine String
-  city        String
-  country     String
-  isDefault   Boolean  @default(false)
-  user        User     @relation(fields: [userId], references: [id])
-  orders      Order[]  @relation("OrderToShippingAddress")
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId // ID cua user so huu
+  fullName  String // Ten nguoi nhan
+  phone     String // SDT nguoi nhan
+  province  String // Tinh/Thanh pho
+  ward      String // Phuong/Xa
+  street    String // So nha, ten duong
+  isDefault Boolean  @default(false) // Dia chi mac dinh hay khong
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan he
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade) // Xoa user -> xoa dia chi
+  orders Order[] // 1 dia chi co the dung cho nhieu don hang
+
+  @@map("addresses")
 }
 
+// ============================================
+// QUẢN LÝ DANH MỤC SẢN PHẨM
+// ============================================
 
-
-// Catalog and Product domain models
 model Category {
-  id            String        @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  description   String?
-  isActive      Boolean       @default(true)
-  subcategories Subcategory[]
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  categoryName String
+  // slug         String   @unique
+  description  String?
+  image        String?
+  parentId     String?  @db.ObjectId
+  isActive     Boolean  @default(true)
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  products Product[]
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children Category[] @relation("CategoryHierarchy")
 }
 
-model Subcategory {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  categoryId  String    @db.ObjectId
-  name        String
-  description String?
-  isActive    Boolean   @default(true)
-  category    Category  @relation(fields: [categoryId], references: [id])
-  products    Product[]
-}
+// ============================================
+// QUẢN LÝ SẢN PHẨM
+// ============================================
 
 model Product {
-  id              String           @id @default(auto()) @map("_id") @db.ObjectId
-  subcategoryId   String           @db.ObjectId
-  name            String
-  description     String?
-  price           Float
-  discountedPrice Float?
-  stockQuantity   Int
-  imageUrl        String?
-  createdAt       DateTime         @default(now())
-  isActive        Boolean          @default(true)
-  productCode     String           @unique
-  subcategory     Subcategory      @relation(fields: [subcategoryId], references: [id])
-  productVariants ProductVariant[]
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  ProductName   String
+  description   String
+  shortDesc     String?
+  price         Float // gia ban hien tai
+  originalPrice Float? // gia goc neu co
+  discount      Float    @default(0)
+  stock         Int      @default(0)
+  categoryId    String   @db.ObjectId
+  isActive      Boolean  @default(true) // dang ban hay khong
+  isFeatured    Boolean  @default(false) // san pham noi bat tren trang chu
+  isBestSeller  Boolean  @default(false)
+  soldCount     Int      @default(0)
+  rating        Float    @default(0)
+  reviewCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  sizes           Json?            
-  colors          Json?
-  reviews         Review[]         @relation("ProductToReviews")
+  // Quan hệ
+  category      Category         @relation(fields: [categoryId], references: [id])
+  variants      ProductVariant[]
+  images        ProductImage[] // 👉 ảnh được tách ra bảng riêng
+  reviews       Review[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  wishlistItems WishlistItem[]
+
+  @@map("products")
 }
 
-model ProductVariant {
-  id                     String         @id @default(auto()) @map("_id") @db.ObjectId
-  productId              String         @db.ObjectId
-  size               String         
-  color              String         
-  stockQuantity          Int
-  variantPrice           Float?
-  variantDiscountedPrice Float?
-  variantImageUrl        String?
-  isActive               Boolean        @default(true)
-  product                Product        @relation(fields: [productId], references: [id])
-  createdAt       DateTime         @default(now())
-  productImages          ProductImage[]
-  cartDetails            CartDetail[]   @relation("CartDetailToProductVariant")
-  wishlistDetails       WishlistDetailt[]   @relation("WishlistDetailToProductVariant")
-  buyNowItems            BuyNowItem[]   @relation("BuyNowItemToProductVariant")
-  orderDetails           OrderDetail[]  @relation("OrderDetailToProductVariant")
-}
-
+// Bảng quản lý ảnh sản phẩm
 model ProductImage {
-  id               String        @id @default(auto()) @map("_id") @db.ObjectId
-  productVariantId String        @db.ObjectId
-  imageUrl         String
-  isMain           Boolean       @default(false)
-  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId   String   @db.ObjectId
+  url         String
+  isThumbnail Boolean  @default(false) // ảnh đại diện chính
+  order       Int      @default(0) // thứ tự hiển thị
+  createdAt   DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_images")
 }
 
-// cart and Raorder domain models
+// Bảng biến thể sản phẩm (màu, dung tích, v.v.)
+model ProductVariant {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId String   @db.ObjectId
+  name      String
+  type      String
+  price     Float?
+  stock     Int      @default(0)
+  sku       String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("product_variants")
+}
+
+// ============================================
+// QUAN LY GIO HANG
+// ============================================
+
+// Bang Cart: Gio hang cua user
 model Cart {
-  id            String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String      @db.ObjectId @unique
-  user          User        @relation("UserToCart", fields: [userId], references: [id])
-  createdAt     DateTime    @default(now())
-  cartDetails   CartDetail[] @relation("CartToCartDetails")
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId // 1 user chi co 1 cart
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan he
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade) // Xoa user -> xoa cart
+  items CartItem[] // Cac san pham trong gio
+
+  @@map("carts")
 }
 
-model CartDetail {
-  id               String        @id @default(auto()) @map("_id") @db.ObjectId
-  cartId           String        @db.ObjectId
-  cart             Cart          @relation("CartToCartDetails", fields: [cartId], references: [id])
-  productVariantId String        @db.ObjectId
-  productVariant   ProductVariant @relation("CartDetailToProductVariant", fields: [productVariantId], references: [id])
-  quantity         Int
-  unitPrice        Float
+// Bang CartItem: Tung san pham trong gio hang
+model CartItem {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  cartId    String   @db.ObjectId // ID gio hang
+  productId String   @db.ObjectId // ID san pham
+  quantity  Int      @default(1) // So luong
+  variantId String?  @db.ObjectId // ID bien the (neu co chon size/mau)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan he
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade) // Xoa cart -> xoa items
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade) // Xoa product -> xoa cart items (khong quan trong)
+
+  @@map("cart_items")
 }
 
+// ============================================
+// QUAN LY DANH SACH YEU THICH
+// ============================================
+
+// Bang Wishlist: Danh sach yeu thich cua user
 model Wishlist {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String      @db.ObjectId @unique
-  user          User        @relation("UserToWishlist", fields: [userId], references: [id])
-  createdAt     DateTime    @default(now())
-  wishlistDetailts   WishlistDetailt[] @relation("WishlistToWishlistDetails")
+  userId    String   @unique @db.ObjectId // 1 user chi co 1 wishlist
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Quan he
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade) // Xoa user -> xoa wishlist
+  items WishlistItem[] // Cac san pham yeu thich
+
+  @@map("wishlists")
 }
 
-model WishlistDetailt{
-  id               String        @id @default(auto()) @map("_id") @db.ObjectId
-  wishlistId           String        @db.ObjectId
-  wishlist             Wishlist          @relation("WishlistToWishlistDetails", fields: [wishlistId], references: [id])
-  productVariantId String        @db.ObjectId
-  productVariant   ProductVariant @relation("WishlistDetailToProductVariant", fields: [productVariantId], references: [id])
+// Bang WishlistItem: Tung san pham trong wishlist
+model WishlistItem {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  wishlistId String   @db.ObjectId // ID wishlist
+  productId  String   @db.ObjectId // ID san pham
+  createdAt  DateTime @default(now())
+
+  // Quan he
+  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade) // Xoa wishlist -> xoa items
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade) // Xoa product -> xoa wishlist items (khong quan trong)
+
+  @@map("wishlist_items")
 }
 
-model BuyNowItem {
-  id               String        @id @default(auto()) @map("_id") @db.ObjectId
-  productVariantId String        @db.ObjectId
-  productVariant   ProductVariant @relation("BuyNowItemToProductVariant", fields: [productVariantId], references: [id])
-  quantity         Int
-  unitPrice        Float
-  productName      String
-  variantImageUrl  String
-  sizeName         String
-  colorName        String
-}
+// ============================================
+// QUAN LY DON HANG
+// ============================================
 
+// Bang Order: Don hang
 model Order {
-  id                String        @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String        @db.ObjectId
-  user              User          @relation("UserToOrders", fields: [userId], references: [id])
-  orderDate         DateTime      @default(now())
-  totalAmount       Float
-  status            OrderStatus
-  shippingAddressId String        @db.ObjectId
-  shippingAddress   Address       @relation("OrderToShippingAddress", fields: [shippingAddressId], references: [id])
-  shippingCost      Float
-  paymentMethodId   String        @db.ObjectId
-  paymentMethod     PaymentMethod @relation("PaymentMethodToOrders", fields: [paymentMethodId], references: [id])
-  couponId          String?       @db.ObjectId @unique
-  coupon            Coupon?       @relation("CouponToOrder",fields: [couponId], references: [id])
-  discountApplied   Float         @default(0)
-  notes             String?       
-  orderDetails      OrderDetail[] @relation("OrderToOrderDetails")
-  payments          Payment?     @relation("OrderToPayment")
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  orderNumber   String        @unique // Ma don hang (vd: DH20250101001)
+  userId        String        @db.ObjectId // ID khach hang
+  addressId     String        @db.ObjectId // ID dia chi giao hang
+  status        OrderStatus   @default(PENDING) // Trang thai don hang
+  paymentMethod String // Phuong thuc: COD, BANK_TRANSFER, MOMO, VNPAY, ZALOPAY
+  paymentStatus PaymentStatus @default(PENDING) // Trang thai thanh toan
+  shippingFee   Float         @default(0) // Phi ship
+  subtotal      Float // Tong tien hang (chua ship)
+  discount      Float         @default(0) // Tien giam gia
+  total         Float // Tong thanh toan (subtotal + ship - discount)
+  note          String? // Ghi chu tu khach
+  cancelReason  String? // Ly do huy don (neu co)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Quan he
+  user    User        @relation(fields: [userId], references: [id])
+  address Address     @relation(fields: [addressId], references: [id])
+  items   OrderItem[] // Cac san pham trong don
+  payment Payment? // Thong tin thanh toan chi tiet
+
+  @@map("orders")
 }
 
-model OrderDetail {
-  id               String        @id @default(auto()) @map("_id") @db.ObjectId
-  orderId          String        @db.ObjectId
-  order            Order         @relation("OrderToOrderDetails", fields: [orderId], references: [id])
-  productVariantId String        @db.ObjectId
-  productVariant   ProductVariant @relation("OrderDetailToProductVariant", fields: [productVariantId], references: [id])
-  quantity         Int
-  unitPrice        Float
-  subtotal         Float
-}
-
+// Enum trang thai don hang
 enum OrderStatus {
-  Pending
-  Confirmed
-  Processing
-  Shipped
-  Delivered
-  Cancelled
+  PENDING // Cho xac nhan
+  CONFIRMED // Da xac nhan
+  PROCESSING // Dang xu ly
+  SHIPPING // Dang giao
+  DELIVERED // Da giao
+  CANCELLED // Da huy
+  REFUNDED // Da hoan tien
 }
 
-
-
-// chat domain models
-model ChatMessage {
-  id         String    @id @default(auto()) @map("_id") @db.ObjectId
-  senderId   String    @db.ObjectId
-  sender     User      @relation("SentMessages", fields: [senderId], references: [id])
-  receiverId String    @db.ObjectId
-  receiver   User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
-  content    String
-  filePath   String?
-  sentAt     DateTime  @default(now())
-  isRead     Boolean   @default(false)
+// Enum trang thai thanh toan
+enum PaymentStatus {
+  PENDING // Cho thanh toan
+  PAID // Da thanh toan
+  FAILED // Thanh toan that bai
+  REFUNDED // Da hoan tien
 }
 
+// Bang OrderItem: Tung san pham trong don hang
+model OrderItem {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  orderId      String   @db.ObjectId // ID don hang
+  productId    String   @db.ObjectId // ID san pham
+  productName  String // Luu ten san pham tai thoi diem mua (giu lich su)
+  productImage String // Luu anh san pham tai thoi diem mua
+  variantName  String? // Ten bien the da chon (neu co)
+  price        Float // Gia tai thoi diem mua
+  quantity     Int // So luong
+  total        Float // Thanh tien (price × quantity)
+  createdAt    DateTime @default(now())
 
-//payment domain models
+  // Quan he
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade) // Xoa order -> xoa items
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict) // KHONG cho xoa product neu da co don hang
+
+  @@map("order_items")
+}
+
+// ============================================
+// QUAN LY THANH TOAN
+// ============================================
+
+// Bang Payment: Thong tin giao dich thanh toan chi tiet
 model Payment {
-  id              String        @id @default(auto()) @map("_id") @db.ObjectId
-  orderId         String        @db.ObjectId @unique
-  order           Order?        @relation("OrderToPayment", fields: [orderId], references: [id])
-  paymentMethodId String        @db.ObjectId
-  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
-  amount          Float
-  paymentDate     DateTime      @default(now())
-  status          String       
-  transactionId   String?       
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id              String         @id @default(auto()) @map("_id") @db.ObjectId
+  orderId         String         @unique @db.ObjectId // 1 order co 1 payment
+  transactionId   String?        @unique // Ma giao dich tu cong thanh toan (Momo, VNPAY...)
+  gateway         PaymentGateway // Cong thanh toan da dung
+  method          String // Chi tiet phuong thuc: Vi dien tu, ATM, Credit card, COD
+  amount          Float // So tien giao dich
+  currency        String         @default("VND") // Don vi tien te
+  status          PaymentStatus  @default(PENDING) // Trang thai thanh toan
+  paidAt          DateTime? // Thoi diem thanh toan thanh cong
+  responseCode    String? // Ma phan hoi tu gateway (de debug)
+  responseMessage String? // Thong bao tu gateway
+  gatewayData     Json? // Du lieu raw tu gateway (luu de kiem tra sau)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Quan he
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade) // Xoa order -> xoa payment
+
+  @@map("payments")
 }
 
-model PaymentMethod {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String   
-  description String?   
-  isActive    Boolean   @default(true)
-  payments    Payment[]
-  order       Order[]         @relation("PaymentMethodToOrders")
+// Enum cong thanh toan
+enum PaymentGateway {
+  COD // Thanh toan khi nhan hang
+  BANK_TRANSFER // Chuyen khoan ngan hang
+  MOMO // Vi MoMo
+  VNPAY // VNPAY
+  ZALOPAY // ZaloPay
+  SHOPEE_PAY // ShopeePay
 }
 
-model Coupon {
-  id               String    @id @default(auto()) @map("_id") @db.ObjectId
-  code             String    @unique
-  discountAmount   Float?
-  discountPercentage Float?
-  startDate        DateTime
-  endDate          DateTime
-  maxUsage         Int
-  usedCount        Int       @default(0)
-  isActive         Boolean   @default(true)
-  order            Order?              @relation("CouponToOrder")
-}
+// ============================================
+// QUAN LY DANH GIA
+// ============================================
 
-
-// Review domain model
+// Bang Review: Danh gia san pham tu khach hang
 model Review {
-  id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  productId String    @db.ObjectId
-  product   Product   @relation("ProductToReviews", fields: [productId], references: [id])
-  userId    String    @db.ObjectId
-  user      User      @relation("UserToReviews", fields: [userId], references: [id])
-  rating    Rating
-  comment   String?   
-  createdAt DateTime  @default(now())
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId // ID nguoi danh gia
+  productId  String   @db.ObjectId // ID san pham
+  rating     Int // So sao (1-5)
+  comment    String? // Noi dung danh gia
+  images     String[] // Anh dinh kem (neu co)
+  isVerified Boolean  @default(false) // Da mua hang hay chua (verified purchase)
+  isActive   Boolean  @default(true) // Hien thi hay an (de admin kiem duyet)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Quan he
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade) // Xoa user -> xoa reviews
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict) // KHONG cho xoa product neu da co danh gia
+
+  @@map("reviews")
 }
 
-//token domain model
-model VerifiToken {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String
-  token     String
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
+// ============================================
+// QUAN LY BANNER/SLIDER
+// ============================================
+
+// Bang Banner: Banner quang cao tren trang chu
+model Banner {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  title       String // Tieu de banner
+  description String? // Mo ta ngan
+  image       String // URL anh banner
+  link        String? // Link den khi click (co the null)
+  order       Int       @default(0) // Thu tu hien thi
+  isActive    Boolean   @default(true) // Dang hien thi hay khong
+  startDate   DateTime? // Ngay bat dau hien thi (optional)
+  endDate     DateTime? // Ngay ket thuc hien thi (optional)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("banners")
 }
 
-model PasswordResetToken {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String
-  token     String
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
+// ============================================
+// QUAN LY MA GIAM GIA
+// ============================================
+
+// Bang Coupon: Ma giam gia / Voucher
+model Coupon {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  code        String     @unique // Ma giam gia (vd: SUMMER2025)
+  description String? // Mo ta chuong trinh
+  type        CouponType // Loai giam gia: phan tram / co dinh / free ship
+  value       Float // Gia tri: % hoac so tien co dinh
+  minOrder    Float      @default(0) // Don hang toi thieu de ap dung
+  maxDiscount Float? // Giam toi da (cho loai %)
+  usageLimit  Int? // Gioi han so lan dung (null = khong gioi han)
+  usedCount   Int        @default(0) // Da dung bao nhieu lan
+  isActive    Boolean    @default(true) // Dang hoat dong khong
+  startDate   DateTime // Ngay bat dau
+  endDate     DateTime // Ngay ket thuc
+  expiresAt   DateTime // Thoi diem het han (de query de dang)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([expiresAt]) // Index de query coupon het han nhanh
+  @@map("coupons")
 }
 
-enum Rating {
-  ONE
-  ONE_HALF
-  TWO
-  TWO_HALF
-  THREE
-  THREE_HALF
-  FOUR
-  FOUR_HALF
-  FIVE
+// Enum loai giam gia
+enum CouponType {
+  PERCENTAGE // Giam theo % (vd: 10%)
+  FIXED // Giam co dinh (vd: 50.000d)
+  FREE_SHIPPING // Mien phi ship
 }

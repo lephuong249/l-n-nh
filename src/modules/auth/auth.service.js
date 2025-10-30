@@ -5,7 +5,7 @@ import { ServerException } from "../../utils/errors.js";
 import { generateVerificationToken,verifyVerificationToken ,generateResetcationToken,verifyResetcationToken} from "../../utils/token.js";
 import { sendVerificationEmail,sendResetPasswordEmail } from "../../utils/sendmail.js";
 import { generateToken } from "../../utils/jwt.util.js";
-import redis from "../../config/redis.js";
+//import redis from "../../config/redis.js";
 class AuthService {
   async register(data) {
     
@@ -89,7 +89,7 @@ class AuthService {
     if(!await prisma.cart.findUnique({ where: { userId: user.id } })) await prisma.cart.create({ data: { userId: user.id} });
     if(!await prisma.wishlist.findUnique({ where: { userId: user.id } })) await prisma.wishlist.create({ data: { userId: user.id} });
     const token = generateToken(user);
-    await redis.set(`auth:user:${user.id}`, token, "EX", 3600);
+    //await redis.set(`auth:user:${user.id}`, token, "EX", 3600);
     return { user, token };
   }
 
@@ -126,7 +126,7 @@ class AuthService {
     if(!await prisma.cart.findUnique({ where: { userId: user.id } })) await prisma.cart.create({ data: { userId: user.id} });
     if(!await prisma.wishlist.findUnique({ where: { userId: user.id } })) await prisma.wishlist.create({ data: { userId: user.id} });
     const token = generateToken(user);
-    await redis.set(`auth:user:${user.id}`, token, "EX", 3600);
+    //await redis.set(`auth:user:${user.id}`, token, "EX", 3600);
     return { user, token };
   }
   
@@ -140,7 +140,7 @@ class AuthService {
     if (!isPasswordValid) throw new ServerException("Password sai", 401);
     
     const token= generateToken(user);
-    await redis.set(`auth:user:${user.id}`, token, "EX", 3600);
+    //await redis.set(`auth:user:${user.id}`, token, "EX", 3600);
     
     return { user:{id: user.id, firstName: user.firstName, lastName: user.lastName, role: user.role, }, token};
   }
