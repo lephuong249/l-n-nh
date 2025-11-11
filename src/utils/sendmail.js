@@ -188,7 +188,7 @@ export async function sendVerificationEmail(user, token) {
       <h1>Welcome to <span class="highlight-l">L</span><span class="highlight">UDUS</span></h1>
     </div>
 
-    <p>Hello <span class="highlight">${user.firstName}</span>,</p>
+    <p>Hello <span class="highlight">${user.userName}</span>,</p>
     <p>
       Thank you for registering an account with <span class="highlight-l">L</span><span class="highlight">UDUS</span>. 
       Please click the button below to confirm and activate your account, 
@@ -317,7 +317,7 @@ export async function sendResetPasswordEmail(user, token) {
       <img src="https://i.pinimg.com/736x/fa/eb/a1/faeba1ac95a922f8c9cd7b7fcf86b28b.jpg" 
            alt="LUDUS Logo" style="max-height:80px;border-radius:12px;margin-bottom:15px;">
       <h1>Welcome to <span class="highlight-l">L</span><span class="highlight">UDUS</span></h1>
-      <p>Hello <strong>${user.firstName} ${user.lastName}</strong>,<br>
+      <p>Hello <strong>${user.userName}</strong>,<br>
          We received a request to reset your password for your <b><span class="highlight-l">L</span><span class="highlight">UDUS</span></b> account.<br/>
       Click the button below to set a new password</p>
       <a href='${resetUrl}' class="btn" style="color: red; text-decoration: none;background-color: white;padding:15px 20px 15px 20px;font-size: 20px; border: solid 2px red;border-radius: 20px;font-weight: bold;">Reset Password</a>

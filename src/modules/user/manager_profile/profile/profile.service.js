@@ -9,8 +9,8 @@ export class ProfileService{
             where: { id: userId },
             select: {
                 id: true,
-                firstName: true,
-                lastName: true,
+                userName: true,
+                
                 birthday: true,
                 email: true,
                 phoneNumber: true,
@@ -28,8 +28,8 @@ export class ProfileService{
         const user = await prisma.user.update({
             where: { id: userId },
             data: {
-                firstName: profileData.firstName,
-                lastName: profileData.lastName,
+                userName: profileData.userName,
+                
                 birthday: new Date( profileData.birthday),
                 phoneNumber: profileData.phoneNumber,   
                 email: profileData.email,

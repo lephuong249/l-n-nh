@@ -2,8 +2,8 @@ import { ClientException } from "../../../../utils/errors.js";
 
 export class UpdateDto {
   constructor(data) {
-    this.firstName = data.firstName?.trim();
-    this.lastName = data.lastName?.trim();
+    this.userName = data.userName?.trim();
+    
     this.email = data.email?.toLowerCase();
     this.phoneNumber = data.phoneNumber?.trim();
     this.birthday = data.birthday;
@@ -13,8 +13,8 @@ export class UpdateDto {
   }
 
   validate() {
-    if (!this.firstName || this.firstName.length < 2) throw new ClientException("First name must be at least 2 characters", 400);
-    if (!this.lastName || this.lastName.length < 2) throw new ClientException("Last name must be at least 2 characters", 400);
+    if (!this.userName || this.userName.length < 2) throw new ClientException("User name must be at least 2 characters", 400);
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(this.email)) throw new ClientException("Invalid email format", 400);
     if(!this.birthday) throw new ClientException("Vui lòng nhập ngày tháng năm sinh", 400);

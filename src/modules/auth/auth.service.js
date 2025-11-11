@@ -6,7 +6,9 @@ import { generateVerificationToken,verifyVerificationToken ,generateResetcationT
 import { sendVerificationEmail,sendResetPasswordEmail } from "../../utils/sendmail.js";
 import { generateToken } from "../../utils/jwt.util.js";
 //import redis from "../../config/redis.js";
+
 class AuthService {
+
   async register(data) {
     
     const existingUser = await prisma.user.findUnique({
@@ -21,13 +23,10 @@ class AuthService {
 
     const newUser = await prisma.user.create({
       data: {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        birthday: new Date(data.birthday),
-        gender: data.gender,
+        userName: data.name,
         email: data.email,
         password: hashedPassword,
-        role: "User",
+        role: "CUSTOMER",
       }
     });
     const token = generateVerificationToken(newUser.id);
@@ -75,11 +74,10 @@ class AuthService {
     if (!user) {
       user = await prisma.user.create({
         data: {
-          firstName: profile.name?.givenName || "",
-          lastName: profile.name?.familyName || "",
+          userName: `${profile.name?.givenName || ''} ${profile.name?.familyName || ''}`.trim(),
           email,
           password: null, 
-          role: "User",
+          role: "CUSTOMER",
           provider: "google",
           externalId: profile.id,
           isActive: true,
@@ -101,30 +99,21 @@ class AuthService {
 
     if (!user) {
       const fullName = profile.displayName || profile._json?.name || "";
-      let firstName = "";
-      let lastName = "";
-
-      if (fullName) {
-        const parts = fullName.trim().split(" ");
-        firstName = parts[0] || "";
-        lastName = parts.slice(1).join(" ") || "";
-      }
 
       user = await prisma.user.create({
-        data: {
-          firstName,
-          lastName,
-          email,
-          password: null,
-          role: "User",
-          provider: "facebook",
-          externalId: profile.id,
-          isActive: true,
-        },
+      data: {
+        userName: fullName.trim() || "Facebook User",
+        email,
+        password: null,
+        role: "CUSTOMER",
+        provider: "facebook",
+        externalId: profile.id,
+        isActive: true,
+      },
       });
     }
-    if(!await prisma.cart.findUnique({ where: { userId: user.id } })) await prisma.cart.create({ data: { userId: user.id} });
-    if(!await prisma.wishlist.findUnique({ where: { userId: user.id } })) await prisma.wishlist.create({ data: { userId: user.id} });
+  if (!await prisma.cart.findUnique({ where: { userId: user.id } })) await prisma.cart.create({ data: { userId: user.id } });
+  if (!await prisma.wishlist.findUnique({ where: { userId: user.id } })) await prisma.wishlist.create({ data: { userId: user.id } });
     const token = generateToken(user);
     //await redis.set(`auth:user:${user.id}`, token, "EX", 3600);
     return { user, token };
@@ -142,7 +131,14 @@ class AuthService {
     const token= generateToken(user);
     //await redis.set(`auth:user:${user.id}`, token, "EX", 3600);
     
-    return { user:{id: user.id, firstName: user.firstName, lastName: user.lastName, role: user.role, }, token};
+    return { 
+    user: {
+      id: user.id, 
+      userName: user.userName,  
+      role: user.role
+      }, 
+      token
+    };  
   }
 
   async sendMailResetPassword(data) {
@@ -181,8 +177,7 @@ class AuthService {
       where: { id: userId },
       select: {
         id: true,
-        firstName: true,
-        lastName: true,
+        userName: true,
         email: true,
         role: true,
         }

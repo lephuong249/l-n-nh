@@ -10,13 +10,12 @@ class AuthController {
   }
 
   async verifyEmail(req, res, next) {
-      try {
-        await authService.verifyEmail(req.query.token);
-        return res.redirect(`${process.env.FRONTEND_URL_USER}/login`);
-      }
-      catch (error) {
-        return errorResponse(res, error.message, error.status || 500);
-      }
+    try {
+      await authService.verifyEmail(req.query.token);
+      return res.redirect(`${process.env.FRONTEND_URL_USER}/login`);
+    } catch (error) {
+      return errorResponse(res, error.message, error.status || 500);
+    }
   }
 
   async googleCallback(req, res, next) {
@@ -38,16 +37,17 @@ class AuthController {
       return errorResponse(res, "Facebook login failed", 500);
     }
   }
+
   async login(req, res, next) {
     const { user, token } = await authService.login(new LoginDto(req.body));
     res.cookie("authToken", token, authCookieOptions);
     return successResponse(res, null, "Đăng nhập thành công", 200);
-    }
+  }
 
   async sendMailResetPassword(req, res, next) {
     const resetToken = await authService.sendMailResetPassword(new SendResetPasswordDto(req.body));
     return successResponse(res, resetToken, "Password reset email sent", 200);
-    }
+  }
   
   async redirectResetPassword(req, res, next) {
     try {
@@ -61,14 +61,15 @@ class AuthController {
       return errorResponse(res, error.message, error.status || 500);
     }
   }
+
   async resetPassword(req, res, next) {
     const user = await authService.resetPassword(req.cookies?.reset_token, new ResetPasswordDto(req.body));
     return successResponse(res, user, "Password reset successfully", 200);
-    }
+  }
   
   async me(req, res, next) {
     const user =  await authService.me(req.user.id);
     return successResponse(res, user, "User profile fetched successfully", 200);
-    }
+  }
 }
 export default new AuthController();

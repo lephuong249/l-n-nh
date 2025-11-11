@@ -3,14 +3,14 @@ import { ServerException } from "../../../utils/errors.js";
 
 export class categoryService {
     async create(data) {
+        const searchName = data.categoryName || data.name;
         const existingCategory = await prisma.category.findFirst({ 
-            where: { name: { contains: data.name, mode: "insensitive" } } 
+            where: { categoryName: { contains: searchName, mode: "insensitive" } } 
           });
           if (existingCategory) throw new ServerException("Danh mục đã tồn tại", 409);
           const newCategory = await prisma.category.create({
             data: {
-              name: data.name,
-              description: data.description,
+              categoryName: searchName,
             }
           });
           return newCategory;
@@ -18,18 +18,17 @@ export class categoryService {
     async update(id, data) {
         const category = await prisma.category.findUnique({ where: { id } });
         if (!category) throw new ServerException("Danh mục không tồn tại", 404);
-        if (data.name && data.name !== category.name) {
+        const newName = data.categoryName || data.name;
+        if (newName && newName !== category.categoryName) {
           const existingCategory = await prisma.category.count({ 
-            where: { name: { contains: data.name, mode: "insensitive" } } 
+            where: { categoryName: { contains: newName, mode: "insensitive" } } 
           });
-          if (existingCategory>1) throw new ServerException("Danh mục đã tồn tại", 409);
+          if (existingCategory>0) throw new ServerException("Danh mục đã tồn tại", 409);
         }
         const updatedCategory = await prisma.category.update({
           where: { id },
           data: {
-            name: data.name || category.name,
-            description: data.description || category.description,
-          }
+            categoryName: newName || category.categoryName,          }
         });
         return updatedCategory;
         }
@@ -40,13 +39,7 @@ export class categoryService {
         return { message: "Xóa danh mục thành công" };
     }
     async getAll(query) {
-        const where=query.q ? 
-        {
-          OR:[
-            {name: { contains: query.q, mode: "insensitive" }},
-            {description: { contains: query.q, mode: "insensitive" }}
-          ]
-          }:{};
+        const where=query.q ? { categoryName: { contains: query.q, mode: "insensitive" }} : {};
         const categories = await prisma.category.findMany({
           where,
           skip: query.offset,

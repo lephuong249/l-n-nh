@@ -1,0 +1,396 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mongodb"
+    url      = env("DATABASE_URL")
+}
+
+// ==============================================
+// USER & AUTHENTICATION
+// ============================================
+
+model User {
+    id          String   @id @default(auto()) @map("_id") @db.ObjectId
+    userName    String // Giữ userName đơn giản
+    email       String   @unique
+    password    String?
+    phoneNumber String? // Đổi từ phone -> phoneNumber cho consistent
+    avatar      String?
+    role        Role     @default(CUSTOMER)
+    isActive    Boolean  @default(false)
+    externalId  String?
+    provider    String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    addresses Address[]
+    orders    Order[]
+    reviews   Review[]
+    cart      Cart?
+    wishlist  Wishlist?
+    vouchers  VoucherWithUser[] // Thêm để track voucher của user
+}
+
+enum Role {
+    CUSTOMER
+    ADMIN
+}
+
+// ============================================
+// ADDRESS
+// ============================================
+
+model Address {
+    id          String   @id @default(auto()) @map("_id") @db.ObjectId
+    userId      String   @db.ObjectId
+    userName    String
+    phoneNumber String // Đổi từ phone -> phoneNumber
+    location    String? // Thêm: full address string từ DB2
+    isDefault   Boolean  @default(false)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    orders Order[]
+}
+
+// ============================================
+// CATEGORY & PRODUCTS
+// ============================================
+
+model Category {
+    id           String   @id @default(auto()) @map("_id") @db.ObjectId
+    categoryName String
+    isActive     Boolean  @default(true)
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    subcategories Subcategory[]
+}
+
+model Subcategory {
+    id              String   @id @default(auto()) @map("_id") @db.ObjectId
+    categoryId      String   @db.ObjectId
+    subcategoryName String
+    isActive        Boolean  @default(true)
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+
+    category Category  @relation(fields: [categoryId], references: [id])
+    products Product[]
+}
+
+model Product {
+    id              String   @id @default(auto()) @map("_id") @db.ObjectId
+    subcategoryId   String   @db.ObjectId
+    ProductName     String // Đổi ProductName -> name
+    description     String?
+    price           Float
+    discountedPrice Float?
+    stockQuantity   Int
+    imageUrl        String?
+    createdAt       DateTime @default(now())
+    isActive        Boolean  @default(true)
+    sizes           Json?
+    colors          Json?
+
+    productVariants ProductVariant[]
+    subcategory     Subcategory      @relation(fields: [subcategoryId], references: [id])
+    productImages   ProductImage[]
+    reviews         Review[]
+    orderDetails    OrderDetail[] // Đổi từ orderItems
+    wishlistDetails WishlistDetail[] // Đổi từ wishlistItems
+}
+
+model ProductImage {
+    id          String  @id @default(auto()) @map("_id") @db.ObjectId
+    productId   String  @db.ObjectId
+    imageUrl    String
+    isThumbnail Boolean @default(false)
+
+    createdAt DateTime @default(now())
+    product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ProductVariant {
+    id                     String   @id @default(auto()) @map("_id") @db.ObjectId
+    productId              String   @db.ObjectId
+    size                   String // Đổi từ name/type thành size cụ thể
+    color                  String // Đổi từ name/type thành color cụ thể
+    stockQuantity          Int
+    variantPrice           Float?
+    variantDiscountedPrice Float?
+    variantImageUrl        String?
+    isActive               Boolean  @default(true)
+    createdAt              DateTime @default(now())
+    updatedAt              DateTime @updatedAt
+
+    product      Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+    cartDetails  CartDetail[]
+    orderDetails OrderDetail[]
+}
+
+// ============================================
+// CART
+// ============================================
+
+model Cart {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    userId    String   @unique @db.ObjectId
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    cartDetails CartDetail[]
+}
+
+model CartDetail {
+    id               String   @id @default(auto()) @map("_id") @db.ObjectId
+    cartId           String   @db.ObjectId
+    productVariantId String?  @db.ObjectId // Nullable nếu sản phẩm không có variant
+    quantity         Int      @default(1)
+    unitPrice        Float // Thêm: lưu giá tại thời điểm add to cart
+    createdAt        DateTime @default(now())
+    updatedAt        DateTime @updatedAt
+
+    cart           Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+    productVariant ProductVariant? @relation(fields: [productVariantId], references: [id])
+}
+
+// ============================================
+// WISHLIST
+// ============================================
+
+model Wishlist {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    userId    String   @unique @db.ObjectId
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+    wishlistDetails WishlistDetail[] // Đổi items -> wishlistDetails
+}
+
+model WishlistDetail {
+    id         String   @id @default(auto()) @map("_id") @db.ObjectId
+    wishlistId String   @db.ObjectId
+    productId  String   @db.ObjectId
+    createdAt  DateTime @default(now())
+
+    wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+    product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// ORDER
+// ============================================
+
+model Order {
+    id                  String           @id @default(auto()) @map("_id") @db.ObjectId
+    orderNumber         String           @unique
+    userId              String           @db.ObjectId
+    addressId           String           @db.ObjectId
+    status              OrderStatus      @default(PENDING)
+    paymentMethodId     String           @db.ObjectId // Thêm: reference đến PaymentMethod
+    paymentStatus       PaymentStatus    @default(PENDING)
+    shippingFee         Float            @default(0)
+    subtotal            Float
+    couponId            String?          @db.ObjectId // Thêm: reference đến Coupon
+    discount            Float            @default(0)
+    discountAppliedType PromotionalType? // Thêm: phân loại discount
+    total               Float
+    note                String?
+    cancelReason        String?
+    createdAt           DateTime         @default(now())
+    updatedAt           DateTime         @updatedAt
+
+    user          User          @relation(fields: [userId], references: [id])
+    address       Address       @relation(fields: [addressId], references: [id])
+    paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+    coupon        Coupon?       @relation(fields: [couponId], references: [id])
+    orderDetails  OrderDetail[] // Đổi items -> orderDetails
+    payment       Payment?
+}
+
+enum OrderStatus {
+    PENDING
+    CONFIRMED
+    PROCESSING
+    SHIPPING
+    DELIVERED
+    CANCELLED
+}
+
+enum PaymentStatus {
+    PENDING
+    PAID
+    FAILED
+    REFUNDED
+}
+
+model OrderDetail {
+    id               String   @id @default(auto()) @map("_id") @db.ObjectId
+    orderId          String   @db.ObjectId
+    productId        String   @db.ObjectId
+    productVariantId String?  @db.ObjectId // Thêm: support variant
+    productName      String
+    productImage     String
+    variantName      String? // size + color
+    price            Float // unitPrice
+    quantity         Int
+    subtotal         Float // Đổi total -> subtotal
+    createdAt        DateTime @default(now())
+
+    order          Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    product        Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+    productVariant ProductVariant? @relation(fields: [productVariantId], references: [id])
+}
+
+// ============================================
+// PAYMENT
+// ============================================
+
+model Payment {
+    id              String        @id @default(auto()) @map("_id") @db.ObjectId
+    orderId         String        @unique @db.ObjectId
+    paymentMethodId String        @db.ObjectId // Thêm: reference đến PaymentMethod
+    amount          Float
+    currency        String        @default("VND")
+    status          PaymentStatus @default(PENDING)
+    transactionId   String?
+    paymentDate     DateTime      @default(now())
+    gatewayData     Json?
+    createdAt       DateTime      @default(now())
+    updatedAt       DateTime      @updatedAt
+
+    order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+}
+
+model PaymentMethod {
+    id          String      @id @default(auto()) @map("_id") @db.ObjectId
+    name        String
+    type        PaymentType // Thêm từ DB2
+    description String?
+    isActive    Boolean     @default(true)
+    createdAt   DateTime    @default(now())
+    updatedAt   DateTime    @updatedAt
+
+    orders   Order[]
+    payments Payment[]
+}
+
+enum PaymentType {
+    COD
+    VNPAY
+}
+
+// ============================================
+// COUPON & VOUCHER
+// ============================================
+
+model Coupon {
+    id              String          @id @default(auto()) @map("_id") @db.ObjectId
+    code            String          @unique
+    description     String?
+    promotionalType PromotionalType // Thêm từ DB2: SHIPPING/PRODUCT
+    discountType    DiscountType // Đổi type -> discountType
+    discountValue   Float // Đổi value -> discountValue
+    minOrder        Float           @default(0)
+    maxDiscount     Float?
+    maxUsage        Int? // Đổi usageLimit -> maxUsage
+    usedCount       Int             @default(0)
+    isActive        Boolean         @default(true)
+    startDate       DateTime
+    endDate         DateTime
+    createdAt       DateTime        @default(now())
+    updatedAt       DateTime        @updatedAt
+
+    orders Order[]
+    users  VoucherWithUser[] // Thêm từ DB2
+
+    @@index([endDate])
+}
+
+enum PromotionalType {
+    SHIPPING
+    PRODUCT
+}
+
+enum DiscountType {
+    PERCENTAGE
+    FIXED_AMOUNT // Đổi FIXED -> FIXED_AMOUNT
+    FREE_SHIPPING // Có thể giữ nếu cần
+}
+
+model VoucherWithUser {
+    id       String  @id @default(auto()) @map("_id") @db.ObjectId
+    userId   String  @db.ObjectId
+    couponId String  @db.ObjectId
+    isUsed   Boolean @default(false) // Đổi isUse -> isUsed
+
+    user   User   @relation(fields: [userId], references: [id])
+    coupon Coupon @relation(fields: [couponId], references: [id])
+}
+
+// ============================================
+// REVIEW
+// ============================================
+
+model Review {
+    id         String   @id @default(auto()) @map("_id") @db.ObjectId
+    userId     String   @db.ObjectId
+    productId  String   @db.ObjectId
+    rating     Int // Giữ Int đơn giản hơn enum Rating của DB2
+    comment    String?
+    images     String[]
+    isVerified Boolean  @default(false)
+    isActive   Boolean  @default(true)
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+
+    user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+}
+
+// ============================================
+// BANNER
+// ============================================
+
+model Banner {
+    id          String    @id @default(auto()) @map("_id") @db.ObjectId
+    title       String
+    description String?
+    image       String
+    link        String?
+    order       Int       @default(0)
+    isActive    Boolean   @default(true)
+    startDate   DateTime?
+    endDate     DateTime?
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+}
+
+// ============================================
+// TOKEN
+// ============================================
+
+model VerifyToken {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    userId    String
+    token     String
+    expiresAt DateTime
+    used      Boolean  @default(false)
+    createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    userId    String
+    token     String
+    expiresAt DateTime
+    used      Boolean  @default(false)
+    createdAt DateTime @default(now())
+}
