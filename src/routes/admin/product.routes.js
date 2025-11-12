@@ -4,10 +4,12 @@ import { upload } from "../../middlewares/upload.middleware.js";
 import { validateQuery, paginationSchema } from "../../validators/queryValidator.js";
 
 const router = Router();
-router.post("/create/:id",upload.single("file") ,new productController().create);
-router.patch("/update/:id",upload.single("file") ,new productController().update);
-router.delete("/delete/:id", new productController().delete);
-router.get("/categories-subcategories", new productController().getAllCategoryAndSubcategory);
-router.get("/all",validateQuery(paginationSchema), new productController().getAll);
+const controller = new productController();
+
+router.post("/create/:id",upload.single("file") ,controller.create.bind(controller));
+router.patch("/update/:id",upload.single("file") ,controller.update.bind(controller));
+router.delete("/delete/:id", controller.delete.bind(controller));
+router.get("/categories-subcategories", controller.getAllCategoryAndSubcategory.bind(controller));
+router.get("/all",validateQuery(paginationSchema), controller.getAll.bind(controller));
 
 export default router;

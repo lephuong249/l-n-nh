@@ -3,8 +3,10 @@ import {categoryController} from "../../modules/admin/category/category.controll
 import { validateQuery, paginationSchema } from "../../validators/queryValidator.js";
 
 const router = Router();
-router.post("/create", new categoryController().create);
-router.patch("/update/:id", new categoryController().update);
-router.delete("/delete/:id", new categoryController().delete);
-router.get("/all",validateQuery(paginationSchema), new categoryController().getAll);
+const controller = new categoryController();
+
+router.post("/create", controller.create.bind(controller));
+router.patch("/update/:id", controller.update.bind(controller));
+router.delete("/delete/:id", controller.delete.bind(controller));
+router.get("/all",validateQuery(paginationSchema), controller.getAll.bind(controller));
 export default router;

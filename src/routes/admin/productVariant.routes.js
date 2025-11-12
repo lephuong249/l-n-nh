@@ -4,9 +4,11 @@ import { upload } from "../../middlewares/upload.middleware.js";
 import { validateQuery, paginationSchema } from "../../validators/queryValidator.js";
 
 const router = Router();
-router.post("/create/:id",upload.single("variantImageUrl") ,new productVariantController().create);
-router.patch("/update/:id",upload.single("variantImageUrl") ,new productVariantController().update);
-router.delete("/delete/:id", new productVariantController().delete);
-router.get("/all/:productId",validateQuery(paginationSchema), new productVariantController().getAll);
+const controller = new productVariantController();
+
+router.post("/create/:id",upload.single("variantImageUrl") ,controller.create.bind(controller));
+router.patch("/update/:id",upload.single("variantImageUrl") ,controller.update.bind(controller));
+router.delete("/delete/:id", controller.delete.bind(controller));
+router.get("/all/:productId",validateQuery(paginationSchema), controller.getAll.bind(controller));
 
 export default router;

@@ -14,7 +14,7 @@ datasource db {
 model User {
     id          String   @id @default(auto()) @map("_id") @db.ObjectId
     userName    String // Giữ userName đơn giản
-    email       String   @unique
+    email       String
     password    String?
     phoneNumber String? // Đổi từ phone -> phoneNumber cho consistent
     avatar      String?
@@ -25,12 +25,13 @@ model User {
     createdAt   DateTime @default(now())
     updatedAt   DateTime @updatedAt
 
-    addresses Address[]
-    orders    Order[]
-    reviews   Review[]
-    cart      Cart?
-    wishlist  Wishlist?
-    vouchers  VoucherWithUser[] // Thêm để track voucher của user
+    addresses       Address[]
+    orders          Order[]
+    reviews         Review[]
+    cart            Cart?
+    wishlist        Wishlist?
+    orderLogs       OrderLog[] // Log thay đổi trạng thái đơn hàng
+    adminActivities AdminActivity[] // Hoạt động admin (nếu user là admin)
 }
 
 enum Role {
@@ -188,30 +189,45 @@ model WishlistDetail {
 // ============================================
 
 model Order {
-    id                  String           @id @default(auto()) @map("_id") @db.ObjectId
-    orderNumber         String           @unique
-    userId              String           @db.ObjectId
-    addressId           String           @db.ObjectId
-    status              OrderStatus      @default(PENDING)
-    paymentMethodId     String           @db.ObjectId // Thêm: reference đến PaymentMethod
-    paymentStatus       PaymentStatus    @default(PENDING)
-    shippingFee         Float            @default(0)
-    subtotal            Float
-    couponId            String?          @db.ObjectId // Thêm: reference đến Coupon
-    discount            Float            @default(0)
-    discountAppliedType PromotionalType? // Thêm: phân loại discount
-    total               Float
-    note                String?
-    cancelReason        String?
-    createdAt           DateTime         @default(now())
-    updatedAt           DateTime         @updatedAt
+    id              String        @id @default(auto()) @map("_id") @db.ObjectId
+    orderNumber     String        @unique // Mã đơn hàng hiển thị
+    userId          String        @db.ObjectId
+    addressId       String        @db.ObjectId
+    status          OrderStatus   @default(PENDING)
+    paymentMethodId String        @db.ObjectId
+    paymentStatus   PaymentStatus @default(PENDING)
 
+    // Tính toán tiền
+    subtotal        Float // Tổng tiền hàng (chưa giảm giá)
+    voucherId       String? @db.ObjectId // Voucher được áp dụng
+    voucherDiscount Float   @default(0) // Số tiền được giảm từ voucher
+    total           Float // Tổng tiền cuối cùng = subtotal - voucherDiscount
+
+    // Thông tin khác
+    note         String? // Ghi chú của khách hàng
+    cancelReason String? // Lý do hủy đơn (nếu có)
+    adminNote    String? // Ghi chú của admin
+
+    // Timestamps
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+    confirmedAt DateTime? // Thời gian xác nhận
+    shippedAt   DateTime? // Thời gian giao hàng
+    deliveredAt DateTime? // Thời gian hoàn thành
+    cancelledAt DateTime? // Thời gian hủy
+
+    // Relations
     user          User          @relation(fields: [userId], references: [id])
     address       Address       @relation(fields: [addressId], references: [id])
     paymentMethod PaymentMethod @relation(fields: [paymentMethodId], references: [id])
-    coupon        Coupon?       @relation(fields: [couponId], references: [id])
-    orderDetails  OrderDetail[] // Đổi items -> orderDetails
+    voucher       Voucher?      @relation(fields: [voucherId], references: [id])
+    orderDetails  OrderDetail[]
     payment       Payment?
+    orderLogs     OrderLog[] // Log thay đổi trạng thái
+
+    @@index([userId])
+    @@index([status])
+    @@index([createdAt])
 }
 
 enum OrderStatus {
@@ -288,51 +304,34 @@ enum PaymentType {
 }
 
 // ============================================
-// COUPON & VOUCHER
+// VOUCHER - CHỈ CHO HÀNG HÓA (KHÔNG SHIP)
 // ============================================
 
-model Coupon {
-    id              String          @id @default(auto()) @map("_id") @db.ObjectId
-    code            String          @unique
-    description     String?
-    promotionalType PromotionalType // Thêm từ DB2: SHIPPING/PRODUCT
-    discountType    DiscountType // Đổi type -> discountType
-    discountValue   Float // Đổi value -> discountValue
-    minOrder        Float           @default(0)
-    maxDiscount     Float?
-    maxUsage        Int? // Đổi usageLimit -> maxUsage
-    usedCount       Int             @default(0)
-    isActive        Boolean         @default(true)
-    startDate       DateTime
-    endDate         DateTime
-    createdAt       DateTime        @default(now())
-    updatedAt       DateTime        @updatedAt
+model Voucher {
+    id            String       @id @default(auto()) @map("_id") @db.ObjectId
+    code          String       @unique
+    name          String // Tên voucher hiển thị
+    description   String? // Mô tả voucher
+    discountType  DiscountType // PERCENTAGE hoặc FIXED_AMOUNT
+    discountValue Float // Giá trị giảm (% hoặc VND)
+    minOrderValue Float        @default(0) // Giá trị đơn hàng tối thiểu
+    maxUsage      Int // Số lần sử dụng tối đa 
+    currentUsage  Int          @default(0) // Số lần đã sử dụng
+    isActive      Boolean      @default(true)
+    startDate     DateTime // Ngày bắt đầu có hiệu lực
+    endDate       DateTime // Ngày hết hạn
+    createdAt     DateTime     @default(now())
+    updatedAt     DateTime     @updatedAt
 
+    // Relations
     orders Order[]
-    users  VoucherWithUser[] // Thêm từ DB2
 
-    @@index([endDate])
-}
-
-enum PromotionalType {
-    SHIPPING
-    PRODUCT
+    @@index([isActive])
 }
 
 enum DiscountType {
-    PERCENTAGE
-    FIXED_AMOUNT // Đổi FIXED -> FIXED_AMOUNT
-    FREE_SHIPPING // Có thể giữ nếu cần
-}
-
-model VoucherWithUser {
-    id       String  @id @default(auto()) @map("_id") @db.ObjectId
-    userId   String  @db.ObjectId
-    couponId String  @db.ObjectId
-    isUsed   Boolean @default(false) // Đổi isUse -> isUsed
-
-    user   User   @relation(fields: [userId], references: [id])
-    coupon Coupon @relation(fields: [couponId], references: [id])
+    PERCENTAGE // Giảm theo phần trăm cố định
+    FIXED // Giảm số tiền cố định
 }
 
 // ============================================
@@ -393,4 +392,96 @@ model PasswordResetToken {
     expiresAt DateTime
     used      Boolean  @default(false)
     createdAt DateTime @default(now())
+}
+
+// ============================================
+// ORDER LOG - THEO DÕI THAY ĐỔI TRẠNG THÁI
+// ============================================
+
+model OrderLog {
+    id        String       @id @default(auto()) @map("_id") @db.ObjectId
+    orderId   String       @db.ObjectId
+    userId    String?      @db.ObjectId // User thực hiện thay đổi (null = system)
+    oldStatus OrderStatus? // Trạng thái cũ (null nếu tạo mới)
+    newStatus OrderStatus // Trạng thái mới
+    reason    String? // Lý do thay đổi
+    note      String? // Ghi chú thêm
+    createdAt DateTime     @default(now())
+
+    order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    user  User? @relation(fields: [userId], references: [id])
+
+    @@index([orderId])
+    @@index([createdAt])
+}
+
+// ============================================
+// SYSTEM LOGS - LOG HỆ THỐNG
+// ============================================
+
+model SystemLog {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    level     LogLevel // ERROR, WARN, INFO, DEBUG
+    category  String // AUTH, ORDER, PAYMENT, VOUCHER, etc
+    action    String // LOGIN, CREATE_ORDER, APPLY_VOUCHER, etc
+    message   String // Nội dung log
+    userId    String?  @db.ObjectId // User liên quan (nếu có)
+    metadata  Json? // Dữ liệu thêm (request, response, error details)
+    ipAddress String? // IP address
+    userAgent String? // User agent
+    createdAt DateTime @default(now())
+
+    @@index([level])
+    @@index([category])
+    @@index([createdAt])
+    @@index([userId])
+}
+
+enum LogLevel {
+    ERROR
+    WARN
+    INFO
+    DEBUG
+}
+
+// ============================================
+// SYSTEM SETTINGS - CẤU HÌNH HỆ THỐNG
+// ============================================
+
+model SystemSetting {
+    id          String   @id @default(auto()) @map("_id") @db.ObjectId
+    key         String   @unique // Khóa cấu hình
+    value       String // Giá trị cấu hình
+    description String? // Mô tả
+    dataType    String   @default("string") // string, number, boolean, json
+    category    String   @default("general") // general, payment, shipping, etc
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    @@index([category])
+}
+
+// ============================================
+// ADMIN ACTIVITIES - HOẠT ĐỘNG ADMIN
+// ============================================
+
+model AdminActivity {
+    id          String   @id @default(auto()) @map("_id") @db.ObjectId
+    adminId     String   @db.ObjectId
+    action      String // CREATE_PRODUCT, UPDATE_ORDER, DELETE_USER, etc
+    targetType  String // PRODUCT, ORDER, USER, VOUCHER, etc
+    targetId    String? // ID của đối tượng bị tác động
+    description String // Mô tả hành động
+    metadata    Json? // Dữ liệu thêm
+    ipAddress   String?
+    userAgent   String?
+    createdAt   DateTime @default(now())
+
+    admin User @relation(fields: [adminId], references: [id])
+
+    @@index([adminId])
+    @@index([action])
+    @@index([targetType])
+    @@index([createdAt])
 }

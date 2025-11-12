@@ -2,20 +2,17 @@ import { ClientException } from "../../../utils/errors.js";
 
 export class createDto {
   constructor(data) {
-    this.name = data.subcategoryName?.trim();
-    this.description = data.description?.trim();
+    this.subcategoryName = data.subcategoryName?.trim();
     this.validate();
   }
+  
   validate() {
-    if(!this.subcategoryName || this.name.length < 2) throw new ClientException("Ten dạnh mục con phải lớn hơn hai ký tự ", 400);
-  }
-}
-export class searchByKeyWordDto {
-  constructor(data) {
-    this.keyword = data.keyword?.trim();
-    this.validate();
-  }
-  validate() {
-    if(!this.keyword || this.keyword.length < 1) throw new ClientException("Từ khóa tìm kiếm không được để trống", 400);
+    if (!this.subcategoryName || this.subcategoryName.length < 2) {
+      throw new ClientException("Tên danh mục con phải có ít nhất 2 ký tự", 400);
+    }
+    
+    if (this.subcategoryName.length > 100) {
+      throw new ClientException("Tên danh mục con không được quá 100 ký tự", 400);
+    }
   }
 }

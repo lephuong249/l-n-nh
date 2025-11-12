@@ -19,14 +19,14 @@ export async function sendVerificationEmail(user, token) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Confirm Your LUDUS Account</title>
+  <title>Xác nhận tài khoản Lina Beauty</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-      background: linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.7)), 
-                  url('https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+      background: linear-gradient(rgba(255, 245, 250, 0.9), rgba(255, 237, 247, 0.9)), 
+                  url('https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
       background-size: cover;
       margin: 0;
       padding: 20px;
@@ -39,14 +39,13 @@ export async function sendVerificationEmail(user, token) {
       max-width: 800px;
       margin: auto;
       padding: 40px;
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 10px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+      background: rgba(255, 255, 255, 0.98);
+      border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(219, 39, 119, 0.15);
       overflow: hidden;
       position: relative;
       animation: slideIn 0.6s ease-out;
-      border: #ECECEC 1px solid;
-      box-shadow: #0f172a 5px 5px 5px 5px;
+      border: 2px solid #fce7f3;
     }
     @keyframes slideIn {
       from { opacity: 0; transform: translateY(30px); }
@@ -64,10 +63,10 @@ export async function sendVerificationEmail(user, token) {
     }
     .header img:hover {
       transform: scale(1.08);
-      box-shadow: 0 0 20px rgba(15, 23, 42, 0.3);
+      box-shadow: 0 0 20px rgba(219, 39, 119, 0.3);
     }
     .header h1 {
-      color: #0f172a;
+      color: #831843;
       font-size: 32px;
       font-weight: 700;
       margin: 0;
@@ -81,7 +80,7 @@ export async function sendVerificationEmail(user, token) {
       left: 50%;
       width: 60px;
       height: 3px;
-      background: linear-gradient(90deg, #0f172a, #1e40af);
+      background: linear-gradient(90deg, #db2777, #ec4899);
       transform: translateX(-50%);
     }
     p {
@@ -102,7 +101,7 @@ export async function sendVerificationEmail(user, token) {
       position: relative;
       overflow: hidden;
       transition: all 0.3s ease;
-      box-shadow: 0 0 15px rgba(15, 23, 42, 0.3);
+      box-shadow: 0 0 15px rgba(219, 39, 119, 0.3);
     }
     .btn::before {
       content: '';
@@ -119,28 +118,24 @@ export async function sendVerificationEmail(user, token) {
     }
     .btn:hover {
       transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(15, 23, 42, 0.4);
+      box-shadow: 0 8px 25px rgba(219, 39, 119, 0.4);
     }
     .btn-confirm { 
-      background: linear-gradient(135deg, #0f172a, #1e40af);
+      background: linear-gradient(135deg, #db2777, #ec4899);
     }
     .btn-cancel { 
-      background: linear-gradient(135deg, #dc2626, #f87171);
+      background: linear-gradient(135deg, #9ca3af, #d1d5db);
     }
     .footer {
       font-size: 14px;
       color: #6b7280;
-      border-top: 1px solid #e5e7eb;
+      border-top: 1px solid #fce7f3;
       padding-top: 20px;
       text-align: center;
       margin-top: 40px;
     }
     .highlight {
-      color: #0f172a;
-      font-weight: 600;
-    }
-    .highlight-l {
-      color: #dc2626;
+      color: #db2777;
       font-weight: 600;
     }
     .timer {
@@ -184,29 +179,31 @@ export async function sendVerificationEmail(user, token) {
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://i.pinimg.com/736x/fa/eb/a1/faeba1ac95a922f8c9cd7b7fcf86b28b.jpg" alt="LUDUS Logo" />
-      <h1>Welcome to <span class="highlight-l">L</span><span class="highlight">UDUS</span></h1>
+      <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=200&q=80" alt="Lina Beauty Logo" />
+      <h1>✨ Chào mừng đến với <span class="highlight">Lina Beauty</span></h1>
     </div>
 
-    <p>Hello <span class="highlight">${user.userName}</span>,</p>
+    <p>Xin chào <span class="highlight">${user.userName}</span>,</p>
     <p>
-      Thank you for registering an account with <span class="highlight-l">L</span><span class="highlight">UDUS</span>. 
-      Please click the button below to confirm and activate your account, 
-      and get ready to explore an exceptional shopping experience!
+      Cảm ơn bạn đã đăng ký tài khoản tại <span class="highlight">Lina Beauty</span>. 
+      Vui lòng nhấn nút xác nhận bên dưới để kích hoạt tài khoản của bạn 
+      và bắt đầu trải nghiệm mua sắm mỹ phẩm chính hãng tuyệt vời!
     </p>
 
     <div style="text-align: center; margin: 36px 0;">
-      <a href="${cancelUrl}" class="btn btn-cancel">Cancel</a>
-      <a href="${verifyUrl}" class="btn btn-confirm">Confirm</a>
+      <a href="${cancelUrl}" class="btn btn-cancel">Hủy bỏ</a>
+      <a href="${verifyUrl}" class="btn btn-confirm">Xác nhận tài khoản</a>
     </div>
 
     <p class="timer">
-      The confirmation link will expire in <b> 30 days</b>.
+      Link xác nhận sẽ hết hiệu lực sau <b>30 ngày</b>.
     </p>
 
     <div class="footer">
-      This is an automated email, please do not reply.<br/>
-      If you did not create an account, please ignore this email.
+      Đây là email tự động, vui lòng không trả lời.<br/>
+      Nếu bạn không tạo tài khoản này, vui lòng bỏ qua email này.<br/>
+      <br/>
+      💖 <b>Lina Beauty</b> - Làm đẹp tự tin, tỏa sáng phong cách
     </div>
   </div>
 </body>
@@ -214,9 +211,9 @@ export async function sendVerificationEmail(user, token) {
   `;
 
   await transporter.sendMail({
-    from: `"LUDUS Shop" <${process.env.SMTP_USER}>`,
+    from: `"Lina Beauty" <${process.env.SMTP_USER}>`,
     to: user.email,
-    subject: "Xác nhận tài khoản LUDUS",
+    subject: "Xác nhận tài khoản Lina Beauty",
     html,
   });
 }
@@ -229,33 +226,32 @@ export async function sendResetPasswordEmail(user, token) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reset Your Password - LUDUS</title>
+    <title>Đặt lại mật khẩu - Lina Beauty</title>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
       body {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-        background: linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.7)), 
-                    url('https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+        background: linear-gradient(rgba(255, 245, 250, 0.9), rgba(255, 237, 247, 0.9)), 
+                    url('https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
         background-size: cover;
         margin: 0;
         padding: 20px;
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: 100vh; /* ✨ giúp căn giữa theo chiều dọc */
+        min-height: 100vh;
       }
       .container {
         max-width: 800px;
         margin: auto;
         padding: 40px;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        background: rgba(255, 255, 255, 0.98);
+        border-radius: 16px;
+        box-shadow: 0 12px 40px rgba(219, 39, 119, 0.15);
         overflow: hidden;
         position: relative;
         animation: slideIn 0.6s ease-out;
-        border: #ECECEC 1px solid;
-        box-shadow: #0f172a 5px 5px 5px 5px;
+        border: 2px solid #fce7f3;
         text-align: center;
       }
       @keyframes slideIn {
@@ -264,68 +260,59 @@ export async function sendResetPasswordEmail(user, token) {
       }
       h1 {
         font-size: 28px;
-        color: #0f172a;
+        color: #831843;
         margin-bottom: 10px;
       }
       p {
         color: #1f2937;
-        line-height: 1.6;
+        line-height: 1.8;
         margin-bottom: 24px;
-      }
-      input[type="password"] {
-        width: 80%;
-        padding: 12px;
-        margin: 10px 0;
-        border-radius: 8px;
-        border: 1px solid #d1d5db;
         font-size: 16px;
       }
-      button {
-        background: linear-gradient(135deg, #0f172a, #1e40af);
-        color: white;
-        padding: 14px 30px;
-        border: none;
+      .btn {
+        display: inline-block;
+        color: white !important;
+        text-decoration: none;
+        background: linear-gradient(135deg, #db2777, #ec4899);
+        padding: 16px 40px;
+        font-size: 18px;
         border-radius: 12px;
-        font-size: 16px;
         font-weight: 600;
-        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(219, 39, 119, 0.3);
         transition: all 0.3s ease;
-        box-shadow: 0 0 10px rgba(15, 23, 42, 0.3);
       }
-      button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.4);
-      }
-      .error {
-        color: #dc2626;
-        font-size: 14px;
-        margin-top: 8px;
-        height: 18px;
+      .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(219, 39, 119, 0.4);
       }
       .highlight {
-        color: #0f172a;
+        color: #db2777;
         font-weight: 600;
       }
-      .highlight-l {
-        color: #dc2626;
-        font-weight: 600;
+      .footer {
+        font-size: 14px;
+        color: #6b7280;
+        border-top: 1px solid #fce7f3;
+        padding-top: 20px;
+        margin-top: 40px;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <img src="https://i.pinimg.com/736x/fa/eb/a1/faeba1ac95a922f8c9cd7b7fcf86b28b.jpg" 
-           alt="LUDUS Logo" style="max-height:80px;border-radius:12px;margin-bottom:15px;">
-      <h1>Welcome to <span class="highlight-l">L</span><span class="highlight">UDUS</span></h1>
-      <p>Hello <strong>${user.userName}</strong>,<br>
-         We received a request to reset your password for your <b><span class="highlight-l">L</span><span class="highlight">UDUS</span></b> account.<br/>
-      Click the button below to set a new password</p>
-      <a href='${resetUrl}' class="btn" style="color: red; text-decoration: none;background-color: white;padding:15px 20px 15px 20px;font-size: 20px; border: solid 2px red;border-radius: 20px;font-weight: bold;">Reset Password</a>
-      <p style="margin-top:24px;">If you didn’t request a password reset, you can safely ignore this email.</p>
+      <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=200&q=80" 
+           alt="Lina Beauty Logo" style="max-height:80px;border-radius:12px;margin-bottom:15px;">
+      <h1>✨ <span class="highlight">Lina Beauty</span></h1>
+      <p>Xin chào <strong>${user.userName}</strong>,<br><br>
+         Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản <b>Lina Beauty</b> của bạn.<br/>
+         Nhấn vào nút bên dưới để tạo mật khẩu mới.</p>
+      <a href='${resetUrl}' class="btn">Đặt lại mật khẩu</a>
+      <p style="margin-top:32px; font-size: 15px;">Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
 
       <div class="footer">
-        This link will expire in <b>15 minutes</b>.<br/>
-        &copy; ${new Date().getFullYear()} <span class="highlight-l">L</span><span class="highlight">UDUS</span>. All rights reserved.
+        Link này sẽ hết hạn sau <b>15 phút</b>.<br/>
+        &copy; ${new Date().getFullYear()} <span class="highlight">Lina Beauty</span>. All rights reserved.<br/>
+        💖 Làm đẹp tự tin, tỏa sáng phong cách
       </div>
     </div>
   </body>
@@ -333,9 +320,9 @@ export async function sendResetPasswordEmail(user, token) {
   `;
 
   await transporter.sendMail({
-    from: `"LUDUS Shop" <${process.env.SMTP_USER}>`,
+    from: `"Lina Beauty" <${process.env.SMTP_USER}>`,
     to: user.email,
-    subject: "Reset your LUDUS password",
+    subject: "Đặt lại mật khẩu Lina Beauty",
     html,
   });
 }
